@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,15 +30,86 @@ class MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Builder(
-                builder: (context) => MaterialButton(
-                  onPressed: () => doTransaction(context),
-                  color: Colors.blue,
-                  child: Text(
-                    'Test Firestore Transaction',
-                    style: TextStyle(color: Colors.white),
-                  ),
+              MaterialButton(
+                color: Colors.blue,
+                child: Text(
+                  'Throw Future.error()',
+                  style: TextStyle(color: Colors.white),
                 ),
+                onPressed: () async {
+                  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+                  try {
+                    await firestore.runTransaction((transaction) async {
+                      Future.error('test');
+                    });
+                  } catch (e) {
+                    setState(() => message = e.toString());
+                  }
+                },
+              ),
+              SizedBox(height: 10),
+              MaterialButton(
+                color: Colors.blue,
+                child: Text(
+                  'Throw PlatformException()',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () async {
+                  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+                  try {
+                    await firestore.runTransaction((transaction) async {
+                      throw PlatformException(code: 'test');
+                    });
+                  } on PlatformException catch (e) {
+                    setState(() => message = 'Platform exception: ${e.code}');
+                  } on FirebaseException catch (e) {
+                    setState(() => message = 'Firebase exception: ${e.code}');
+                  } on Exception catch (e) {
+                    setState(() => message = e.toString());
+                  }
+                },
+              ),
+              SizedBox(height: 10),
+              MaterialButton(
+                color: Colors.blue,
+                child: Text(
+                  'Throw FirebaseException()',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () async {
+                  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+                  try {
+                    await firestore.runTransaction((transaction) async {
+                      throw FirebaseException(code: 'test');
+                    });
+                  } on FirebaseException catch (e) {
+                    setState(() => message = 'Firebase Exception ${e.code}');
+                  } on Exception catch (e) {
+                    setState(() => message = e.toString());
+                  }
+                },
+              ),
+              SizedBox(height: 10),
+              MaterialButton(
+                color: Colors.blue,
+                child: Text(
+                  'Throw Exception()',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () async {
+                  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+                  try {
+                    await firestore.runTransaction((transaction) async {
+                      throw Exception('test');
+                    });
+                  } catch (e) {
+                    setState(() => message = e.toString());
+                  }
+                },
               ),
               SizedBox(height: 50),
               Text(message)
@@ -46,19 +118,5 @@ class MyAppState extends State<MyApp> {
         ),
       ),
     );
-  }
-
-  void doTransaction(BuildContext context) async {
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    final docRef = firestore.doc('Counter/counter');
-
-    try {
-      // Run a transaction.
-      await firestore.runTransaction((transaction) async {
-        Future.error('');
-      });
-    } catch (e) {
-      print('AAAA $e');
-    }
   }
 }
